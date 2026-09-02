@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRO Meal & Fitness Planner</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary: #10B981; /* Emerald Green */
+            --secondary: #F59E0B; /* Orange */
+            --bg-light: #ECFDF5;
+            --card-bg: #FFFFFF;
+            --text-dark: #064E3B;
+            --text-muted: #64748B;
+            --danger: #EF4444;
+            --water: #3B82F6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+        body { background-color: var(--bg-light); color: var(--text-dark); display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 15px; }
+
+        /* --- Security Vault --- */
+        .auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-light); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; overflow-y: auto;}
+        .auth-screen h2 { color: var(--primary); font-size: 32px; margin-bottom: 10px; }
+        .auth-screen p { color: var(--text-muted); margin-bottom: 20px; font-size: 15px; }
+        
+        .pin-display { font-size: 32px; letter-spacing: 15px; font-weight: bold; height: 40px; margin-bottom: 20px; color: var(--text-dark); }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 280px; margin-bottom: 20px;}
+        .key { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #D1FAE5; background: white; font-size: 24px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.2s; color: var(--text-dark);}
+        .key:active { background: var(--primary); color: white; transform: scale(0.95); }
+        
+        .auth-links { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
+        .auth-btn-link { background: none; border: none; color: var(--primary); font-size: 14px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+        .auth-btn-link.danger { color: var(--danger); text-decoration: none; font-size: 13px; margin-top: 10px; opacity: 0.8;}
+
+        .sec-form { display: none; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.1); width: 100%; max-width: 350px; text-align: left; border: 1px solid #D1FAE5;}
+        .sec-form label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+        .sec-form input { width: 100%; padding: 12px; border: 2px solid #E2E8F0; border-radius: 8px; margin-bottom: 15px; font-size: 14px; outline: none; }
+        .sec-form input:focus { border-color: var(--primary); }
+        .sec-form button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px;}
+        .sec-form button.cancel { background: #E2E8F0; color: var(--text-dark); }
+
+        /* --- App Layout --- */
+        .app-container { display: none; width: 100%; max-width: 800px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05); flex-wrap: wrap; gap: 10px;}
+        .header-title h1 { color: var(--primary); font-size: 24px; display: flex; align-items: center; gap: 8px; margin:0;}
+        .header-controls button { background: none; border: 1px solid #E2E8F0; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); transition: 0.2s; }
+        .header-controls button:hover { background: #F8FAFC; }
+
+        /* --- Tabs --- */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); overflow-x: auto;}
+        .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text-muted); border-radius: 8px; transition: 0.3s; white-space: nowrap;}
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .tab-content { display: none; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Inputs & UI Elements --- */
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .input-group select, .input-group input { flex: 1; padding: 12px 15px; border: 2px solid #E2E8F0; border-radius: 10px; font-size: 14px; outline: none; font-family: 'Outfit'; min-width: 130px; background: white;}
+        .input-group select:focus, .input-group input:focus { border-color: var(--primary); }
+        .btn-add { background: var(--secondary); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px;}
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #F1F5F9; transition: 0.2s; }
+        .list-item:hover { background: #F8FAFC; }
+        .item-text { font-weight: 600; font-size: 15px; }
+        .item-badge { background: #D1FAE5; color: var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 5px; display: inline-block;}
+        .btn-del { color: var(--danger); background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
+
+        .check-item { display: flex; align-items: center; gap: 12px; }
+        .check-box { width: 22px; height: 22px; cursor: pointer; accent-color: var(--primary); }
+        .checked-text { text-decoration: line-through; color: var(--text-muted); }
+
+        /* --- Custom Tracker Widgets --- */
+        .widget-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+        @media(min-width: 600px){ .widget-grid { grid-template-columns: 1fr 1fr; } }
+        
+        .widget { background: var(--bg-light); border: 2px dashed var(--primary); padding: 20px; border-radius: 12px; text-align: center; }
+        
+        .water-grid { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 15px;}
+        .water-drop { width: 35px; height: 45px; border: 2px solid var(--water); border-radius: 0 50% 50% 50%; transform: rotate(45deg); cursor: pointer; transition: 0.3s; background: transparent; margin: 5px;}
+        .water-drop.filled { background: var(--water); }
+
+        .cal-circle { width: 120px; height: 120px; border-radius: 50%; border: 8px solid var(--primary); display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 15px auto; }
+        .cal-circle span { font-size: 24px; font-weight: bold; color: var(--text-dark); }
+        .cal-circle small { font-size: 11px; color: var(--text-muted); text-transform: uppercase;}
+
+        .pro-badge { background: linear-gradient(135deg, var(--primary), #34D399); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; letter-spacing: 1px; display: inline-block; margin-bottom: 15px;}
+    </style>
+</head>
+<body>
+
+    <div id="auth" class="auth-screen">
+        <div class="pro-badge">PRO VERSION ACTIVATED</div>
+        <h2>Health Vault</h2>
+        <p id="auth-msg">Create a 4-digit PIN to secure your data.</p>
+        
+        <div id="keypad-area">
+            <div class="pin-display" id="pin-dots">_ _ _ _</div>
+            <div class="keypad">
+                <button class="key" onclick="press(1)">1</button><button class="key" onclick="press(2)">2</button><button class="key" onclick="press(3)">3</button>
+                <button class="key" onclick="press(4)">4</button><button class="key" onclick="press(5)">5</button><button class="key" onclick="press(6)">6</button>
+                <button class="key" onclick="press(7)">7</button><button class="key" onclick="press(8)">8</button><button class="key" onclick="press(9)">9</button>
+                <button class="key" style="color:var(--danger); border-color:#FEE2E2;" onclick="clearPin()">C</button><button class="key" onclick="press(0)">0</button>
+            </div>
+            <div class="auth-links" id="auth-links"></div>
+        </div>
+
+        <div id="sec-setup" class="sec-form">
+            <h3 style="color:var(--primary); margin-bottom:15px; margin-top:0;">Recovery Question</h3>
+            <label>Security Question</label>
+            <input type="text" id="setup-q" placeholder="e.g., Favorite fruit?">
+            <label>Answer</label>
+            <input type="text" id="setup-a" placeholder="Your Answer">
+            <button onclick="saveSecurityAndUnlock()">Save & Unlock</button>
+        </div>
+
+        <div id="sec-recover" class="sec-form">
+            <h3 style="color:var(--primary); margin-bottom:15px; margin-top:0;">PIN Recovery</h3>
+            <label id="recover-q-text">Question?</label>
+            <input type="text" id="recover-a" placeholder="Enter your answer">
+            <button onclick="checkRecovery()">Verify & Remove PIN</button>
+            <button class="cancel" onclick="cancelRecovery()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="app" class="app-container">
+        <div class="header">
+            <div class="header-title">
+                <h1>🥗 Meal & Fitness Hub</h1>
+            </div>
+            <div class="header-controls">
+                <button onclick="hardResetApp()">⚠️ Reset App</button>
+                <button onclick="lockApp()">🔒 Lock</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('meals')">🍽️ Meal Plan</button>
+            <button class="tab-btn" onclick="switchTab('tracker')">🔥 Daily Tracker</button>
+            <button class="tab-btn" onclick="switchTab('grocery')">🛒 Groceries</button>
+        </div>
+
+        <div id="meals" class="tab-content active">
+            <div class="input-group">
+                <select id="meal-day">
+                    <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option><option value="Friday">Friday</option><option value="Saturday">Saturday</option><option value="Sunday">Sunday</option>
+                </select>
+                <select id="meal-type">
+                    <option value="Breakfast">Breakfast</option><option value="Lunch">Lunch</option><option value="Dinner">Dinner</option><option value="Snack">Snack</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <input type="text" id="meal-food" placeholder="What are you eating? (e.g. Oatmeal & Eggs)">
+                <button class="btn-add" onclick="addMeal()">+ Add Meal</button>
+            </div>
+            <div id="meal-list"></div>
+        </div>
+
+        <div id="tracker" class="tab-content">
+            <div class="widget-grid">
+                <div class="widget">
+                    <h3 style="color:var(--water); margin-top:0;">Water Intake</h3>
+                    <p style="font-size:12px; color:var(--text-muted);">Goal: 8 Glasses / Day</p>
+                    <div class="water-grid" id="water-grid">
+                        </div>
+                </div>
+
+                <div class="widget">
+                    <h3 style="color:var(--primary); margin-top:0;">Calories Left</h3>
+                    <div class="input-group" style="margin-bottom:10px;">
+                        <input type="number" id="cal-goal" placeholder="Daily Goal (e.g. 2000)" style="padding:8px;">
+                        <button class="btn-add" style="padding:8px 15px;" onclick="setCalGoal()">Set</button>
+                    </div>
+                    <div class="cal-circle">
+                        <span id="cal-rem">0</span>
+                        <small>Kcal left</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="cal-food" placeholder="Food / Drink Item">
+                <input type="number" id="cal-amt" placeholder="Calories" style="max-width:120px;">
+                <button class="btn-add" onclick="addCalorie()">+ Log Food</button>
+            </div>
+            <div id="cal-list"></div>
+        </div>
+
+        <div id="grocery" class="tab-content">
+            <div class="input-group">
+                <input type="text" id="groc-item" placeholder="Add to shopping list...">
+                <button class="btn-add" onclick="addGrocery()">+ Add</button>
+            </div>
+            <div id="groc-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Data ---
+        let db = {
+            pin: localStorage.getItem('hlth_pin'),
+            sec_q: localStorage.getItem('hlth_sec_q'),
+            sec_a: localStorage.getItem('hlth_sec_a'),
+            skipPin: localStorage.getItem('hlth_skip_pin'),
+            meals: JSON.parse(localStorage.getItem('hlth_meals')) || [],
+            groceries: JSON.parse(localStorage.getItem('hlth_groc')) || [],
+            water: parseInt(localStorage.getItem('hlth_water')) || 0,
+            calGoal: parseInt(localStorage.getItem('hlth_cgoal')) || 2000,
+            calories: JSON.parse(localStorage.getItem('hlth_cals')) || []
+        };
+
+        function saveDb() {
+            localStorage.setItem('hlth_meals', JSON.stringify(db.meals));
+            localStorage.setItem('hlth_groc', JSON.stringify(db.groceries));
+            localStorage.setItem('hlth_water', db.water);
+            localStorage.setItem('hlth_cgoal', db.calGoal);
+            localStorage.setItem('hlth_cals', JSON.stringify(db.calories));
+        }
+
+        // --- Auth Logic ---
+        let currentPin = "";
+        
+        window.onload = () => {
+            if (db.skipPin === "true") unlockApp();
+            else renderAuthScreen();
+        };
+
+        function renderAuthScreen() {
+            document.getElementById('auth').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('keypad-area').style.display = 'block';
+            document.getElementById('sec-setup').style.display = 'none';
+            document.getElementById('sec-recover').style.display = 'none';
+            
+            let linksDiv = document.getElementById('auth-links');
+            clearPin();
+
+            if (!db.pin) {
+                document.getElementById('auth-msg').innerText = "Create a 4-digit PIN to secure your health data.";
+                linksDiv.innerHTML = `<button class="auth-btn-link" onclick="skipPinSetup()">Skip & Use Without PIN</button>`;
+            } else {
+                document.getElementById('auth-msg').innerText = "Enter your 4-digit PIN to unlock.";
+                linksDiv.innerHTML = `
+                    <button class="auth-btn-link" onclick="showRecovery()">Forgot PIN?</button>
+                    <button class="auth-btn-link danger" onclick="hardResetApp()">⚠️ Hard Reset (Wipes all data)</button>
+                `;
+            }
+        }
+
+        function press(num) {
+            if (currentPin.length < 4) {
+                currentPin += num;
+                document.getElementById('pin-dots').innerText = currentPin.padEnd(4, '_').split('').join(' ');
+                
+                if (currentPin.length === 4) {
+                    setTimeout(() => {
+                        if (!db.pin) {
+                            document.getElementById('keypad-area').style.display = 'none';
+                            document.getElementById('sec-setup').style.display = 'block';
+                            document.getElementById('auth-msg').innerText = "PIN Set! Add recovery info.";
+                        } else {
+                            if (currentPin === db.pin) unlockApp();
+                            else { alert("Incorrect PIN!"); clearPin(); }
+                        }
+                    }, 200);
+                }
+            }
+        }
+
+        function clearPin() { currentPin = ""; document.getElementById('pin-dots').innerText = "_ _ _ _"; }
+        function skipPinSetup() { localStorage.setItem('hlth_skip_pin', "true"); db.skipPin = "true"; unlockApp(); }
+
+        function saveSecurityAndUnlock() {
+            let q = document.getElementById('setup-q').value.trim();
+            let a = document.getElementById('setup-a').value.trim();
+            if(!q || !a) { alert("Please enter both question and answer."); return; }
+            localStorage.setItem('hlth_pin', currentPin); localStorage.setItem('hlth_sec_q', q); localStorage.setItem('hlth_sec_a', a.toLowerCase());
+            db.pin = currentPin; db.sec_q = q; db.sec_a = a.toLowerCase();
+            unlockApp();
+        }
+
+        function showRecovery() {
+            if(!db.sec_q) { alert("No security question was set."); return; }
+            document.getElementById('keypad-area').style.display = 'none';
+            document.getElementById('sec-recover').style.display = 'block';
+            document.getElementById('recover-q-text').innerText = db.sec_q;
+        }
+
+        function checkRecovery() {
+            let ans = document.getElementById('recover-a').value.trim().toLowerCase();
+            if(ans === db.sec_a) {
+                alert("Verified! PIN removed.");
+                ['hlth_pin','hlth_sec_q','hlth_sec_a'].forEach(k => localStorage.removeItem(k));
+                db.pin = null; db.sec_q = null; db.sec_a = null;
+                renderAuthScreen();
+            } else alert("Incorrect Answer.");
+        }
+        function cancelRecovery() { renderAuthScreen(); }
+
+        function unlockApp() {
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            renderAll();
+        }
+
+        function lockApp() {
+            if(db.skipPin === "true") {
+                if(confirm("Do you want to set up a PIN now?")) {
+                    localStorage.removeItem('hlth_skip_pin'); db.skipPin = null; renderAuthScreen();
+                }
+            } else renderAuthScreen();
+        }
+
+        function hardResetApp() {
+            if(confirm("DANGER: Wipes all meals, trackers, and PIN. Sure?")) { localStorage.clear(); location.reload(); }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- App Logic ---
+        function addMeal() {
+            let day = document.getElementById('meal-day').value;
+            let type = document.getElementById('meal-type').value;
+            let food = document.getElementById('meal-food').value.trim();
+            if(!food) return;
+            db.meals.unshift({ id: Date.now(), day, type, food });
+            document.getElementById('meal-food').value = '';
+            saveDb(); renderAll();
+        }
+        function delMeal(id) { db.meals = db.meals.filter(m => m.id !== id); saveDb(); renderAll(); }
+
+        function addGrocery() {
+            let item = document.getElementById('groc-item').value.trim();
+            if(!item) return;
+            db.groceries.unshift({ id: Date.now(), name: item, done: false });
+            document.getElementById('groc-item').value = '';
+            saveDb(); renderAll();
+        }
+        function toggleGrocery(id) {
+            let item = db.groceries.find(i => i.id === id);
+            if(item) { item.done = !item.done; saveDb(); renderAll(); }
+        }
+        function delGrocery(id) { db.groceries = db.groceries.filter(g => g.id !== id); saveDb(); renderAll(); }
+
+        function toggleWater(index) {
+            db.water = (db.water === index + 1) ? index : index + 1;
+            saveDb(); renderAll();
+        }
+
+        function setCalGoal() {
+            let val = parseInt(document.getElementById('cal-goal').value);
+            if(val) { db.calGoal = val; document.getElementById('cal-goal').value=''; saveDb(); renderAll(); }
+        }
+        function addCalorie() {
+            let food = document.getElementById('cal-food').value.trim();
+            let amt = parseInt(document.getElementById('cal-amt').value);
+            if(!food || isNaN(amt)) return;
+            db.calories.unshift({ id: Date.now(), food, amt });
+            document.getElementById('cal-food').value = ''; document.getElementById('cal-amt').value = '';
+            saveDb(); renderAll();
+        }
+        function delCalorie(id) { db.calories = db.calories.filter(c => c.id !== id); saveDb(); renderAll(); }
+
+        function renderAll() {
+            // Meals
+            document.getElementById('meal-list').innerHTML = db.meals.map(m => `
+                <div class="list-item">
+                    <div><span class="item-badge">${m.day} - ${m.type}</span><br><span class="item-text">${m.food}</span></div>
+                    <button class="btn-del" onclick="delMeal(${m.id})">×</button>
+                </div>`).join('');
+
+            // Groceries
+            document.getElementById('groc-list').innerHTML = db.groceries.map(g => `
+                <div class="list-item">
+                    <div class="check-item"><input type="checkbox" class="check-box" ${g.done?'checked':''} onchange="toggleGrocery(${g.id})"><span class="item-text ${g.done?'checked-text':''}">${g.name}</span></div>
+                    <button class="btn-del" onclick="delGrocery(${g.id})">×</button>
+                </div>`).join('');
+
+            // Water
+            let waterHtml = '';
+            for(let i=0; i<8; i++) {
+                waterHtml += `<div class="water-drop ${i < db.water ? 'filled' : ''}" onclick="toggleWater(${i})"></div>`;
+            }
+            document.getElementById('water-grid').innerHTML = waterHtml;
+
+            // Calories
+            let consumed = db.calories.reduce((sum, c) => sum + c.amt, 0);
+            let rem = db.calGoal - consumed;
+            document.getElementById('cal-rem').innerText = rem;
+            document.getElementById('cal-rem').style.color = rem < 0 ? 'var(--danger)' : 'var(--text-dark)';
+            
+            document.getElementById('cal-list').innerHTML = db.calories.map(c => `
+                <div class="list-item">
+                    <span class="item-text">${c.food}</span>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span style="color:var(--secondary); font-weight:bold;">${c.amt} kcal</span>
+                        <button class="btn-del" onclick="delCalorie(${c.id})">×</button>
+                    </div>
+                </div>`).join('');
+        }
+    </script>
+</body>
+</html>
